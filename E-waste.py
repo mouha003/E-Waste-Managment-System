@@ -1,12 +1,9 @@
+from select import select
 from tkinter import *
-from functools import partial
 from tkinter import messagebox
 from tkinter import scrolledtext
 from tkinter import ttk
-import sqlite3
-
-
-# import dbconnection
+import eWaste_Db_Connect
 
 my_data = [
     ("Monitor", "Dell", "9f7ds8f", "00", 50),
@@ -26,292 +23,368 @@ my_data = [
     ("Router/Switch", "N/A", "9f7ds3f", "14", 54)
 ]
 
-#  #e55d5d #dark pink
-# fdf2f2  # light pink
-# efefef  # green
-# f3aa33  # yellow
-
 
 def mainDriver():
-    global main_window, ewaste_table, my_canvas, second_frame
-    main_window = Tk()
+    global mainWindow, my_table, unit_RadioVariable, otherUnit_RadioButton, make_RadioVariable, other_make_option, \
+        pallet_number_entry, dbTable, serial_number_entry, quantity_entry, pallet_number_entry
+    dbTable = 'ewaste'
 
-    main_window.title('E-Waste Management System')
-    main_window.geometry('1350x750+120+10')
-    # main_window.resizable(False, False)
+    mainWindow = Tk()
 
+    mainWindow.title('E-Waste Management System')
+    mainWindow.geometry('1250x950+180+10')
+    # mainWindow.resizable(False, False)
     # Create a topFrame to hold the topLabel "E-waste"
-    top_frame = Frame(main_window)
-    top_frame.pack(fill=X, side=TOP, pady=13)
+    topFrame = Frame(mainWindow)
+    topFrame.pack(fill=X, side=TOP)
+    # Throw topLabel inside the topFrame
+    topLabel = Label(topFrame, text='E-waste Management System',
+                     font='MingLiU_HKSCS-ExtB 25 bold')
+    topLabel.pack(fill=X, anchor=CENTER)
 
-    ewaste_label = Label(top_frame, text='E-waste Management System',
-                         font='MingLiU_HKSCS-ExtB 25 bold')
-    ewaste_label.pack(fill=X, anchor=CENTER)
+    tableFrame = Frame(mainWindow)
+    tableFrame.pack()
 
-# ======= Main Frame / Canvas =======
-    main_frame = Frame(main_window)
-    main_frame.pack(fill=BOTH, expand=1)
+    style = ttk.Style(tableFrame)
+    style.theme_use('classic')
 
-    my_canvas = Canvas(main_frame)
-    my_canvas.pack(side=LEFT, fill=BOTH, expand=1, padx=60)
+    style.configure('Treeview', bg='#3BA4B9', fg='black',
+                    rowheight=40, fieldbackground='gray', font='arial 12')
+    style.configure("Treeview.Heading", background='#e55d5d',
+                    foreground='white', font='arial 13 bold')
+    style.map("Treeview", background=[('selected', '#6F5EA2')])
 
-    win_scroll_bar = Scrollbar(
-        main_frame, orient=VERTICAL, command=my_canvas.yview)
-    win_scroll_bar.pack(side=RIGHT, fill=Y)
+    tree_ScrollBar = Scrollbar(tableFrame, orient=VERTICAL)
+    tree_ScrollBar.pack(side=RIGHT, fill=Y)
 
-    my_canvas.configure(yscrollcommand=win_scroll_bar.set)
-    my_canvas.bind('<Configure>', lambda e: my_canvas.configure(
-        scrollregion=my_canvas.bbox("all")))
-    second_frame = Frame(my_canvas)
-    my_canvas.create_window((0, 0), window=second_frame, anchor="nw")
+    my_table = ttk.Treeview(
+        tableFrame, yscrollcommand=tree_ScrollBar.set, selectmode="extended", height=10)
+    my_table.tag_configure('even', background='white')  # configure the tags
+    my_table.tag_configure('odd', background='#fdf2f2')  # configure the tags
 
-# ========== E-Waste Table Frame / Style / TreeView ================
-    table_frame = Frame(second_frame)
-    table_frame.pack()
+    my_table.pack(pady=10)
+    tree_ScrollBar.config(command=my_table.yview)
 
-    # General theme style for Ewaste table
-    table_style = ttk.Style(table_frame)
-    table_style.theme_use('classic')
+    my_table['columns'] = ('id', 'unit', 'make',
+                           'model_serial', 'item_qty', 'pallet')
+    my_table.column('#0', width=0, stretch=NO)
+    my_table.column('id', width=80)
+    my_table.column('unit', width=150)
+    my_table.column('make', width=200)
+    my_table.column('model_serial', width=250)
+    my_table.column('item_qty', width=450)
+    my_table.column('pallet', width=120)
 
-    # Configure Table Row and Heading Colors
-    table_style.configure('Treeview', bg='black',
-                          rowheight=40, fieldbackground='gray', font=('arial', 12))
+    my_table.heading('#0', text='', anchor=W)
+    my_table.heading('id', text='  ID', anchor=W)
+    my_table.heading('unit', text='  Unit', anchor=W)
+    my_table.heading('make', text='  Make', anchor=W)
+    my_table.heading('model_serial', text='  Model / Serial', anchor=W)
+    my_table.heading('item_qty', text='  Item - Quantity', anchor=W)
+    my_table.heading('pallet', text='  Pallet #', anchor=W)
 
-    table_style.configure('Treeview.Heading', background='#e55d5d', rowheight=40, foreground='white',
-                          font=("timesnewroman", 13, "bold"))
+    # =============================================== Unit type Frame =========================================================================================
+    unitFrame = LabelFrame(mainWindow, text=' Unit Type ',
+                           font='MingLiU_HKSCS-ExtB 15 bold', bd=2)
+    unitFrame.pack(ipady=20, padx=40, fill=X)
 
-    table_style.map("Treeview", background=[('selected', '#f3aa33')])
+    unit_RadioVariable = StringVar()
+    # default Radio value to Assorted Item
+    unit_RadioVariable.set('Assorted Item')
 
-    # add scroll bar ro table Direction:Y-axis
-    table_scroll_bar = Scrollbar(table_frame, orient=VERTICAL)
-    table_scroll_bar.pack(side=RIGHT, fill=Y, )
+    assorted_RadioButton = Radiobutton(
+        unitFrame, text='Assorted Item', value='Assorted Item', variable=unit_RadioVariable, font='arial 12')
+    assorted_RadioButton.pack(padx=25, side=LEFT)
 
-    # Add TreeView in table frame
-    ewaste_table = ttk.Treeview(
-        table_frame, yscrollcommand=table_scroll_bar.set, selectmode='extended', height=10)
+    monitor_RadioButton = Radiobutton(
+        unitFrame, text='Monitor', value='Monitor', variable=unit_RadioVariable, font='arial 12')
+    monitor_RadioButton.pack(padx=25, side=LEFT)
+    desktop_RadioButton = Radiobutton(
+        unitFrame, text='Desktop', value='Desktop', variable=unit_RadioVariable, font='arial 12')
+    desktop_RadioButton.pack(padx=25, side=LEFT)
+    printer_RadioButton = Radiobutton(
+        unitFrame, text='Printer', value='Printer', variable=unit_RadioVariable, font='arial 12')
+    printer_RadioButton.pack(padx=25, side=LEFT)
+    rs_RadioButton = Radiobutton(unitFrame, text='Router/Switch', value='Router_Switch',
+                                 variable=unit_RadioVariable, font='arial 12')  # Router Switch button
+    rs_RadioButton.pack(padx=25, side=LEFT)
+    otherUnit_RadioButton = Radiobutton(
+        unitFrame, text='Other', value='other', variable=unit_RadioVariable, font='arial 12', command=getUnitOther)
+    otherUnit_RadioButton.pack(padx=25, side=LEFT)
+    # =============================================== Unit Type end =========================================================================================
+    # =======================================================================================================================================================
 
-    # Configure Stripped Rows
-    ewaste_table.tag_configure('even_rows', background='white')
-    ewaste_table.tag_configure('odd_rows', background='#fdf2f2')
-
-    ewaste_table.pack()
-    # configure the scroll on ewaste table
-    table_scroll_bar.config(command=ewaste_table.yview)
-    # Define Ewaste Table Columns
-    ewaste_table['columns'] = (
-        'unit', 'make', 'model_serial', 'pallet', 'item_qty')
-    ewaste_table.column('#0', width=0, stretch=NO)
-    ewaste_table.column('unit', width=200)
-    ewaste_table.column('make', width=250)
-    ewaste_table.column('model_serial', width=250)
-    ewaste_table.column('pallet', width=150)
-    ewaste_table.column('item_qty', width=350)
-
-    # map heading data with text
-    ewaste_table.heading('#0', text='', anchor=W)
-    ewaste_table.heading('unit', text=' Unit', anchor=W)
-    ewaste_table.heading('make', text=' Make', anchor=W)
-    ewaste_table.heading('model_serial', text=' Model / Serial')
-    ewaste_table.heading('pallet', text=' Pallet #', anchor=W)
-    ewaste_table.heading('item_qty', text=' Item-Qty', anchor=W)
-
-    ewasteUnitType()
-    ewasteMake()
-    ewasteSerialNumber()
-    ewasteQty_Pallet()
-    addEwasteUnits()
-    updateEwasteUnits()
-    delEwasteUnits()
-    queryData()
-    main_window.mainloop()
-
-# Generate Ewaste Labels Form
-
-
-def ewasteUnitType():
-    global other_unit_option
-    # Create Label for ewaste Label Frame
-    ewaste_unit_Frame = LabelFrame(
-        second_frame, text='Unit Type', font='MingLiU_HKSCS-ExtB 15 bold', bd=2)
-    ewaste_unit_Frame.pack(ipady=20, padx=20, pady=30, fill=X)
-
-    # Set Default value to Assorted Item
-    radio_variable = StringVar()
-    radio_variable.set('Assorted Item')
-
-    # Create all Radio button and values
-    assorted_radio_button = Radiobutton(
-        ewaste_unit_Frame, text='Assorted Item', value='Assorted Item', variable=radio_variable, font='arial 12')
-
-    assorted_radio_button.pack(padx=25, side=LEFT)
-
-    monitor_radio_button = Radiobutton(
-        ewaste_unit_Frame, text='Monitor', value='Monitor', variable=radio_variable, font='arial 12')
-
-    monitor_radio_button.pack(padx=25, side=LEFT)
-
-    desktop_radio_button = Radiobutton(
-        ewaste_unit_Frame, text='Desktop',  value='Desktop', variable=radio_variable, font='arial 12')
-
-    desktop_radio_button.pack(padx=25, side=LEFT)
-
-    printer_radio_button = Radiobutton(
-        ewaste_unit_Frame, text='Printer', value='Printer', variable=radio_variable, font='arial 12')
-
-    printer_radio_button.pack(padx=25, side=LEFT)
-    # Router Switch button
-    rs_radio_button = Radiobutton(
-        ewaste_unit_Frame, text='Router/Switch', value='Router_Switch', variable=radio_variable, font='arial 12')
-
-    rs_radio_button.pack(padx=25, side=LEFT)
-
-    other_unit_option = Radiobutton(ewaste_unit_Frame)
-
-    other_unit_option.configure(text='Other', value='other', variable=radio_variable,
-                                font='arial 12',
-                                command=partial(getOtherUnit, radio_variable, other_unit_option))
-
-    other_unit_option.pack(padx=25, side=LEFT)
-
-
-def getOtherUnit(r, otherOption):
-    global otherOptionWindow, otherUnitEntry, otherUnit_errorMsg
-    otherOptionWindow = Toplevel(second_frame)
-    otherOptionWindow.title('Other Input')
-    otherOptionWindow.geometry("600x200+600+250")
-
-    otherUnit_errorMsg = Label(
-        otherOptionWindow, text='', font='arial 12', fg='red')
-    otherUnit_errorMsg.pack()
-    otherLabel = Label(otherOptionWindow, text='Input', font='ariel 20')
-    otherLabel.pack(padx=40, side=LEFT)
-    otherUnitEntry = Entry(otherOptionWindow, font='arial 15')
-    otherUnitEntry.pack(side=LEFT)
-    otherUnitEntry.focus()
-    otherButton = Button(otherOptionWindow, text='OK',
-                         font='arial 12', command=partial(exit_getOtherUnit, r, otherOption))
-    otherButton.pack(padx=40, side=LEFT)
-
-    otherOptionWindow.grab_set()
-    otherOptionWindow.bind('<Return>', partial(
-        exit_getOtherUnit, r, otherOption))
-    otherOptionWindow.mainloop()
-
-
-def exit_getOtherUnit(r, otherOption, event=None):
-    if otherUnitEntry.get() == '':
-        otherUnit_errorMsg.config(text='***NOTHING WAS ENTERED***')
-    else:
-        # radio_variable.set(otherUnitEntry.get())
-        r.set(otherUnitEntry.get())
-        otherOption.config(
-            text=r.get(), value=r.get())
-        otherOptionWindow.destroy()
-
-
-def ewasteMake():
+    # =============================================== Make type Frame =======================================================================================
     ewaste_make_Frame = LabelFrame(
-        second_frame, text='Make', font='MingLiU_HKSCS-ExtB 15 bold', bd=2)
-    ewaste_make_Frame.pack(ipady=20, padx=20, pady=30, fill=X)
+        mainWindow, text=' Make ', font='MingLiU_HKSCS-ExtB 15 bold', bd=2)
+    ewaste_make_Frame.pack(ipady=20, padx=40, pady=20, fill=X)
 
     # Set Default value to Assorted Item
-    radio_var = StringVar()
-    radio_var.set('Dell')
+    make_RadioVariable = StringVar()
+    make_RadioVariable.set('Dell')
 
     # Create all Radio button and values
     dell_radio_button = Radiobutton(
-        ewaste_make_Frame, text='Dell', value='Dell', variable=radio_var, font='arial 12')
+        ewaste_make_Frame, text='Dell', value='Dell', variable=make_RadioVariable, font='arial 12')
 
     dell_radio_button.pack(padx=25, side=LEFT)
 
     hp_radio_button = Radiobutton(
-        ewaste_make_Frame, text='HP', value='HP', variable=radio_var, font='arial 12')
+        ewaste_make_Frame, text='HP', value='HP', variable=make_RadioVariable, font='arial 12')
 
     hp_radio_button.pack(padx=25, side=LEFT)
 
     ibm_radio_button = Radiobutton(
-        ewaste_make_Frame, text='IBM', value='IBM', variable=radio_var, font='arial 12')
+        ewaste_make_Frame, text='IBM', value='IBM', variable=make_RadioVariable, font='arial 12')
 
     ibm_radio_button.pack(padx=25, side=LEFT)
 
     lenovo_radio_button = Radiobutton(
-        ewaste_make_Frame, text='Lenovo',  value='Lenovo', variable=radio_var, font='arial 12')
+        ewaste_make_Frame, text='Lenovo',  value='Lenovo', variable=make_RadioVariable, font='arial 12')
 
     lenovo_radio_button.pack(padx=25, side=LEFT)
 
     thinkPad_radio_button = Radiobutton(
-        ewaste_make_Frame, text='ThinkPad/ThinkCentre', value='ThinkPad/ThinkCentre', variable=radio_var, font='arial 12')
+        ewaste_make_Frame, text='ThinkPad/ThinkCentre', value='ThinkPad/ThinkCentre', variable=make_RadioVariable, font='arial 12')
 
     thinkPad_radio_button.pack(padx=25, side=LEFT)
 
-    other_make_option = Radiobutton(ewaste_make_Frame)
-
-    other_make_option.configure(text='Other', value='other', variable=radio_var, font='arial 12', command=partial(
-        getOtherUnit, radio_var, other_make_option))
+    other_make_option = Radiobutton(ewaste_make_Frame, text='Other', value='other',
+                                    variable=make_RadioVariable, font='arial 12', command=getMakeOther)
     other_make_option.pack(padx=25, side=LEFT)
+    # =============================================== Make end =========================================================================================
+    # ==================================================================================================================================================
 
-
-def ewasteSerialNumber():
-    global acessoryFrame
-    # Create Label for ewaste Model/ Serial Number
-    acessoryFrame = Frame(second_frame)
-    acessoryFrame.pack()
+    bottomFrame = Frame(mainWindow)
+    bottomFrame.pack()
     serial_number = Label(
-        acessoryFrame, text='Model / Serial Number', font='MingLiU_HKSCS-ExtB 12 bold')
+        bottomFrame, text='Model / Serial Number', font='MingLiU_HKSCS-ExtB 12 bold')
     serial_number.pack(padx=8, pady=30, side=LEFT)
 
-    serial_number_entry = Entry(acessoryFrame, width=20, font=('Arial 18'))
+    serial_number_entry = Entry(bottomFrame, width=20, font=('Arial 18'))
     serial_number_entry.pack(side=LEFT)
 
-
-def ewasteQty_Pallet():
-
-    # UNIT QUANTITY LABEL AND ENTRY
-    quantity_label = Label(
-        acessoryFrame, text='Quantity', font='MingLiU_HKSCS-ExtB 12 bold')
+    quantity_label = Label(bottomFrame, text='Quantity',
+                           font='MingLiU_HKSCS-ExtB 12 bold')
     quantity_label.pack(padx=12, pady=30, side=LEFT)
 
-    quantity_entry = Entry(acessoryFrame, width=18, font=('Arial 18'))
+    quantity_entry = Entry(bottomFrame, width=18, font=('Arial 18'))
     quantity_entry.pack(side=LEFT)
 
-
-# PALLET NUMBER LABEL & ENTRY
     pallet_number_label = Label(
-        acessoryFrame, text='Pallet #', font='MingLiU_HKSCS-ExtB 12 bold')
+        bottomFrame, text='Pallet #', font='MingLiU_HKSCS-ExtB 12 bold')
     pallet_number_label.pack(padx=12, pady=30, side=LEFT)
 
-    pallet_number_entry = Entry(acessoryFrame, width=18, font=('Arial 18'))
+    pallet_number_entry = Entry(bottomFrame, width=10, font=('Arial 18'))
     pallet_number_entry.pack(side=LEFT)
 
+    btn_Frame = Frame(mainWindow)
+    btn_Frame.pack(padx=60, pady=40, anchor=W)  # padx=60, pady=40, anchor=W)
 
-def addEwasteUnits():
-    global btn_Frame
-    btn_Frame = Frame(second_frame)
-    btn_Frame.pack(fill=X,)
+    addBtn = Button(btn_Frame, text='ADD', height=2, width=10,
+                    bg='#5fb28f', fg='white', font=('Arial 10 bold'), command=add_ewaste_records)
+    # addBtn.pack(side=LEFT, padx=34)
+    addBtn.grid(column=0, columnspan=5, row=0, padx=100, sticky=W)
 
-    addBtn = Button(btn_Frame, text='ADD',
-                    height=2, width=10, bg='#5fb28f', fg='white', font=('Arial 10 bold'))
-    addBtn.pack(pady=30, padx=200, side='left')
+    updateBtn = Button(btn_Frame, text='Update', height=2,
+                       width=10, bg='#f3aa33', fg='white', font=('Arial 10 bold'), command=update_ewaste_record)
+    # updateBtn.pack(side=LEFT, padx=60)
+    updateBtn.grid(column=1, columnspan=5, row=0, padx=400, sticky=W)
+
+    deleteBtn = Button(btn_Frame, text='Delete', height=2,
+                       width=10, bg='#e55d5d', fg='white', font=('Arial 10 bold'), command=delete_ewaste_record)
+    # #deleteBtn.pack(side=LEFT, padx=60)
+    deleteBtn.grid(column=2, columnspan=5, row=0, padx=700, sticky=W)
+
+    editPalletNum = Button(btn_Frame, text='Edit Pallet #', height=2,
+                           width=10, bg='#e55d5d', fg='white', font=('Arial 10 bold'))
+    # #editPalletNum.pack(side=LEFT, padx=21)
+    editPalletNum.grid(column=3, columnspan=5, row=0, padx=1120, sticky=W)
+
+    queryData()
+    mainWindow.bind("<Escape>", lambda e: exitWindow(e, mainWindow))
+    my_table.bind("<Double-1>", OnDoubleClick)
+    # my_table.bind("<ButtonRelease-1>", reset_record)
+    mainWindow.mainloop()
 
 
-def updateEwasteUnits():
-    updateBtn = Button(btn_Frame, text='Update',
-                       height=2, width=10, bg='#f3aa33', fg='white', font=('Arial 10 bold'))
-    updateBtn.pack(pady=30, padx=10, side='left')
+def OnDoubleClick(event):
+    reset_table_fields()
+    item = my_table.selection()[0]
+    record_values = my_table.item(item, "value")
+    print(f"You Clicked on {record_values[1].strip()}.")
+    unit_RadioVariable.set('Assorted Item')
+    unit_RadioVariable.set(str(record_values[1].strip()))
+    make_RadioVariable.set(str(record_values[2].strip()))
+    serial_number_entry.insert(0, record_values[3])
+    quantity_entry.insert(0, record_values[4])
+    pallet_number_entry.insert(0, record_values[5])
 
 
-def delEwasteUnits():
-    deleteBtn = Button(btn_Frame, text='Delete',
-                       height=2, width=10, bg='#e55d5d', fg='white', font=('Arial 10 bold'))
-    deleteBtn.pack(pady=30, padx=10, side='left')
+def getUnitOther():
+    global otherUnitWindow, otherUnitEntry, otherUnit_errorMsg
+    otherUnitWindow = Toplevel(mainWindow)
+    otherUnitWindow.title('Unit Type')
+    otherUnitWindow.geometry("600x200+600+250")
+
+    otherUnit_errorMsg = Label(
+        otherUnitWindow, text='', font='arial 25', fg='red')
+    otherUnit_errorMsg.pack()
+    otherLabel = Label(otherUnitWindow, text='Unit Type', font='arial 20')
+    otherLabel.pack(padx=40, side=LEFT)
+    otherUnitEntry = Entry(otherUnitWindow, font='arial 12')
+    otherUnitEntry.pack(side=LEFT)
+    otherUnitEntry.focus()
+    okButton = Button(otherUnitWindow, text='OK',
+                      font='arial 15', command=exit_getOtherUnit)
+    okButton.pack(padx=40, side=LEFT)
+
+    otherUnitWindow.grab_set()
+    otherUnitWindow.bind('<Return>', lambda e: exit_getOtherUnit())
+    otherUnitWindow.bind('<Escape>', lambda e: exitWindow(e, otherUnitWindow))
+    otherUnitWindow.mainloop()
+
+
+def exit_getOtherUnit():
+    if otherUnitEntry.get() == '':
+        otherUnit_errorMsg.config(text='NOTHING WAS ENTERED')
+    else:
+        unit_RadioVariable.set(otherUnitEntry.get())
+        otherUnit_RadioButton.config(
+            text=unit_RadioVariable.get(), value=unit_RadioVariable.get())
+        otherUnitWindow.destroy()
+
+
+def getMakeOther():
+    global otherMakeWindow, otherMakeEntry, otherMake_errorMsg
+    otherMakeWindow = Toplevel(mainWindow)
+    otherMakeWindow.title('Make')
+    otherMakeWindow.geometry("600x200+600+250")
+
+    otherMake_errorMsg = Label(
+        otherMakeWindow, text='', font='arial 25', fg='red')
+    otherMake_errorMsg.pack()
+    otherLabel = Label(otherMakeWindow, text='Make', font='arial 20')
+    otherLabel.pack(padx=40, side=LEFT)
+    otherMakeEntry = Entry(otherMakeWindow, font='arial 12')
+    otherMakeEntry.pack(side=LEFT)
+    otherMakeEntry.focus()
+    okButton = Button(otherMakeWindow, text='OK',
+                      font='arial 15', command=exit_getOtherMake)
+    okButton.pack(padx=40, side=LEFT)
+
+    otherMakeWindow.grab_set()
+    otherMakeWindow.bind('<Return>', lambda e: exit_getOtherMake())
+    otherMakeWindow.bind('<Escape>', lambda e: exitWindow(e, otherMakeWindow))
+    otherMakeWindow.mainloop()
+
+
+def exit_getOtherMake():
+    if otherMakeEntry.get() == '':
+        otherMake_errorMsg.config(text='NOTHING WAS ENTERED')
+    else:
+        make_RadioVariable.set(otherMakeEntry.get())
+        other_make_option.config(
+            text=make_RadioVariable.get(), value=unit_RadioVariable.get())
+        otherMakeWindow.destroy()
+
+
+def exitWindow(event, window):
+    window.destroy()
+
+
+def reset_table_fields():
+    unit_RadioVariable.set('Assorted Item'),
+    make_RadioVariable.set('Dell'),
+    serial_number_entry.delete(0, 'end'),
+    quantity_entry.delete(0, 'end'),
+    pallet_number_entry.delete(0, 'end')
+    my_table.focus()
+    serial_number_entry.focus()
+
+
+def add_ewaste_records():
+    eWaste_Db_Connect.connectDB(dbTable)
+    cur = eWaste_Db_Connect.myCursor.execute(
+        'INSERT INTO ewaste (unit, make, model_serial, item_qty, pallet) VALUES(" % s"," % s"," % s"," % s"," % s");'
+        % (unit_RadioVariable.get(), make_RadioVariable.get(), serial_number_entry.get(), quantity_entry.get(), pallet_number_entry.get()))
+
+    rowID = cur.lastrowid
+
+    sql = f"SELECT * FROM ewaste where id = {rowID}"
+    fetchResult = eWaste_Db_Connect.myCursor.execute(sql).fetchall()
+
+    if (rowID-1) % 2 == 0:
+        my_table.insert('', 0, values=fetchResult[0], tags='even')
+    else:
+        my_table.insert('', 0, values=fetchResult[0], tags='odd')
+
+    reset_table_fields()
+
+    eWaste_Db_Connect.commitCloseDb()
+
+
+def delete_ewaste_record():
+    messageDelete = messagebox.askyesno(
+        "Delete", "Do you want to permanently delete this record?")
+    if messageDelete > 0:
+        eWaste_Db_Connect.connectDB(dbTable)
+        cur = eWaste_Db_Connect.myCursor
+        for selected_data in my_table.selection():
+            selected_data_ID = my_table.set(selected_data, 'id')
+            my_table.delete(selected_data)
+            deleted_recored = cur.execute(
+                f"Delete From ewaste where id={selected_data_ID}")
+    print("item has been Deleted")
+    eWaste_Db_Connect.commitCloseDb()
+
+
+def update_ewaste_record():
+    selected = my_table.selection()[0]
+    record_value = my_table.item(selected, "value")
+    print(record_value)
+
+    messageUpdate = messagebox.askyesno(
+        "Update", "Are you sure you want to update this record?")
+
+    if messageUpdate > 0:
+
+        eWaste_Db_Connect.connectDB(dbTable)
+        update_query = """ Update ewaste SET unit=?, make=?, model_serial=?, item_qty=?, pallet=? WHERE id = ? """
+        columValues = (unit_RadioVariable.get(), make_RadioVariable.get(
+        ), serial_number_entry.get(), quantity_entry.get(), pallet_number_entry.get(), record_value[0])
+        print(columValues)
+        my_table.item(selected, text="", values=(record_value[0], unit_RadioVariable.get(), make_RadioVariable.get(
+        ), serial_number_entry.get(), quantity_entry.get(), pallet_number_entry.get()))
+
+        eWaste_Db_Connect.myCursor.execute(update_query, columValues)
+        # cur.execute(
+        #     f"Update ewase SET unit ={unit_RadioVariable.get()}, make = {make_RadioVariable.get()}, model_serial = {serial_number_entry.get()},item_qty = {quantity_entry.get()}, pallet = {pallet_number_entry.get()} WHERE id = {record_value[0]}",)
+
+    reset_table_fields()
+    eWaste_Db_Connect.commitCloseDb()
 
 
 def queryData():
-    for i in my_data:
-        if my_data.index(i) % 2 == 0:
-            ewaste_table.insert('', index=0, values=i, tags='even_rows')
+    global currentPallet
+
+    eWaste_Db_Connect.connectDB(dbTable)
+
+    myData_From_DB = eWaste_Db_Connect.myCursor.execute(
+        'SELECT * FROM ewaste;').fetchall()
+
+    for record in myData_From_DB:
+        if myData_From_DB.index(record) % 2 == 0:
+            my_table.insert('', index=0, values=record, tags='even')
         else:
-            ewaste_table.insert('', index=0, values=i, tags='odd_rows')
+            my_table.insert('', index=0, values=record, tags='odd')
+
+    # Read config.txt file and grab the current Pallet value
+    with open(r"C:\Users\Mouhari Mouhamed\Downloads\E-Waste\config.txt", 'r') as r:
+        currentPallet = "     "+r.readline()
+
+    pallet_number_entry.insert(0, currentPallet)
+    pallet_number_entry.config(state=DISABLED)
 
 
 if __name__ == '__main__':
