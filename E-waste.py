@@ -1,4 +1,3 @@
-from select import select
 from tkinter import *
 from tkinter import messagebox
 from tkinter import scrolledtext
@@ -197,7 +196,7 @@ def mainDriver():
     deleteBtn.grid(column=2, columnspan=5, row=0, padx=700, sticky=W)
 
     editPalletNum = Button(btn_Frame, text='Edit Pallet #', height=2,
-                           width=10, bg='#e55d5d', fg='white', font=('Arial 10 bold'))
+                           width=10, bg='#e55d5d', fg='white', font=('Arial 10 bold'), command=edit_pallet)
     # #editPalletNum.pack(side=LEFT, padx=21)
     editPalletNum.grid(column=3, columnspan=5, row=0, padx=1120, sticky=W)
 
@@ -319,8 +318,11 @@ def add_ewaste_records():
     else:
         my_table.insert('', 0, values=fetchResult[0], tags='odd')
 
-    reset_table_fields()
+    with open(r"C:\Users\Mouhari Mouhamed\Downloads\E-Waste\config.txt", 'w') as r:
+        r.write(pallet_number_entry.get())
 
+    reset_table_fields()
+    get_default_pallet()
     eWaste_Db_Connect.commitCloseDb()
 
 
@@ -358,11 +360,15 @@ def update_ewaste_record():
         ), serial_number_entry.get(), quantity_entry.get(), pallet_number_entry.get()))
 
         eWaste_Db_Connect.myCursor.execute(update_query, columValues)
-        # cur.execute(
-        #     f"Update ewase SET unit ={unit_RadioVariable.get()}, make = {make_RadioVariable.get()}, model_serial = {serial_number_entry.get()},item_qty = {quantity_entry.get()}, pallet = {pallet_number_entry.get()} WHERE id = {record_value[0]}",)
-
+        with open(r"C:\Users\Mouhari Mouhamed\Downloads\E-Waste\config.txt", 'w') as r:
+            r.write(pallet_number_entry.get())
     reset_table_fields()
+    get_default_pallet()
     eWaste_Db_Connect.commitCloseDb()
+
+
+def edit_pallet():
+    pallet_number_entry.config(state='normal')
 
 
 def queryData():
@@ -380,6 +386,14 @@ def queryData():
             my_table.insert('', index=0, values=record, tags='odd')
 
     # Read config.txt file and grab the current Pallet value
+    with open(r"C:\Users\Mouhari Mouhamed\Downloads\E-Waste\config.txt", 'r') as r:
+        currentPallet = "     "+r.readline()
+
+    pallet_number_entry.insert(0, currentPallet)
+    pallet_number_entry.config(state=DISABLED)
+
+
+def get_default_pallet():
     with open(r"C:\Users\Mouhari Mouhamed\Downloads\E-Waste\config.txt", 'r') as r:
         currentPallet = "     "+r.readline()
 
