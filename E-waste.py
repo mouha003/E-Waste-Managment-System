@@ -1,32 +1,36 @@
+from optparse import make_option
+from ssl import Options
 from tkinter import *
 from tkinter import messagebox
 from tkinter import scrolledtext
 from tkinter import ttk
+from tokenize import String
 import eWaste_Db_Connect
 
-my_data = [
-    ("Monitor", "Dell", "9f7ds8f", "00", 50),
-    ("Assorted Item", "IBM", "9f7ds0f", "01", 51),
-    ("Desktop", "Lenovo", "9f7ds1f", "02", 52),
-    ("Printer", "ThinkPad/ThinkCentre", "9f7ds2f", "03", 53),
-    ("Router/Switch", "N/A", "9f7ds3f", "04", 54),
-    ("Monitor", "Dell", "9f7ds8f", "05", 50),
-    ("Assorted Item", "IBM", "9f7ds0f", "06", 51),
-    ("Desktop", "Lenovo", "9f7ds1f", "07", 52),
-    ("Printer", "ThinkPad/ThinkCentre", "9f7ds2f", "08", 53),
-    ("Router/Switch", "N/A", "9f7ds3f", "09", 54),
-    ("Monitor", "Dell", "9f7ds8f", "10", 50),
-    ("Assorted Item", "IBM", "9f7ds0f", "11", 51),
-    ("Desktop", "Lenovo", "9f7ds1f", "12", 52),
-    ("Printer", "ThinkPad/ThinkCentre", "9f7ds2f", "13", 53),
-    ("Router/Switch", "N/A", "9f7ds3f", "14", 54)
-]
+# my_data = [
+#     ("Monitor", "Dell", "9f7ds8f", "00", 50),
+#     ("Assorted Item", "IBM", "9f7ds0f", "01", 51),
+#     ("Desktop", "Lenovo", "9f7ds1f", "02", 52),
+#     ("Printer", "ThinkPad/ThinkCentre", "9f7ds2f", "03", 53),
+#     ("Router/Switch", "N/A", "9f7ds3f", "04", 54),
+#     ("Monitor", "Dell", "9f7ds8f", "05", 50),
+#     ("Assorted Item", "IBM", "9f7ds0f", "06", 51),
+#     ("Desktop", "Lenovo", "9f7ds1f", "07", 52),
+#     ("Printer", "ThinkPad/ThinkCentre", "9f7ds2f", "08", 53),
+#     ("Router/Switch", "N/A", "9f7ds3f", "09", 54),
+#     ("Monitor", "Dell", "9f7ds8f", "10", 50),
+#     ("Assorted Item", "IBM", "9f7ds0f", "11", 51),
+#     ("Desktop", "Lenovo", "9f7ds1f", "12", 52),
+#     ("Printer", "ThinkPad/ThinkCentre", "9f7ds2f", "13", 53),
+#     ("Router/Switch", "N/A", "9f7ds3f", "14", 54)
+# ]
 
 
 def mainDriver():
     global mainWindow, my_table, unit_RadioVariable, otherUnit_RadioButton, make_RadioVariable, other_make_option, \
-        pallet_number_entry, dbTable, serial_number_entry, quantity_entry, pallet_number_entry
+        pallet_number_entry, dbTable, serial_number_entry, quantity_entry, pallet_number_entry, dbName, option_menu
     dbTable = 'ewaste'
+    dbName = 'Inventory.db'
 
     mainWindow = Tk()
 
@@ -178,17 +182,18 @@ def mainDriver():
     pallet_number_entry.pack(side=LEFT)
 
     btn_Frame = Frame(mainWindow)
-    btn_Frame.pack(padx=60, pady=40, anchor=W)  # padx=60, pady=40, anchor=W)
+    # padx=60, pady=40, anchor=W)
+    btn_Frame.pack(padx=60, pady=40, anchor=W, fill='x')
 
     addBtn = Button(btn_Frame, text='ADD', height=2, width=10,
                     bg='#5fb28f', fg='white', font=('Arial 10 bold'), command=add_ewaste_records)
     # addBtn.pack(side=LEFT, padx=34)
-    addBtn.grid(column=0, columnspan=5, row=0, padx=100, sticky=W)
+    addBtn.grid(column=0, columnspan=5, row=0, padx=500, sticky=W)
 
     updateBtn = Button(btn_Frame, text='Update', height=2,
                        width=10, bg='#f3aa33', fg='white', font=('Arial 10 bold'), command=update_ewaste_record)
     # updateBtn.pack(side=LEFT, padx=60)
-    updateBtn.grid(column=1, columnspan=5, row=0, padx=400, sticky=W)
+    updateBtn.grid(column=1, columnspan=5, row=0, padx=600, sticky=W)
 
     deleteBtn = Button(btn_Frame, text='Delete', height=2,
                        width=10, bg='#e55d5d', fg='white', font=('Arial 10 bold'), command=delete_ewaste_record)
@@ -198,26 +203,32 @@ def mainDriver():
     editPalletNum = Button(btn_Frame, text='Edit Pallet #', height=2,
                            width=10, bg='#e55d5d', fg='white', font=('Arial 10 bold'), command=edit_pallet)
     # #editPalletNum.pack(side=LEFT, padx=21)
-    editPalletNum.grid(column=3, columnspan=5, row=0, padx=1120, sticky=W)
+    editPalletNum.grid(column=3, columnspan=5, row=0, padx=1000, sticky=W)
+
+    option_menu = Menu(my_table, tearoff=0)
+    option_menu.add_command(label='Update', command=update_ewaste_record)
+    option_menu.add_command(label='Delete', command=delete_ewaste_record)
+    option_menu.add_command(label='Export')
+    option_menu.add_separator()
+    option_menu.add_command(label='Clear', command=queryData)
 
     queryData()
     mainWindow.bind("<Escape>", lambda e: exitWindow(e, mainWindow))
     my_table.bind("<Double-1>", OnDoubleClick)
+    my_table.bind("<Button-3>", do_popup)
     # my_table.bind("<ButtonRelease-1>", reset_record)
     mainWindow.mainloop()
 
 
+def do_popup(event):
+    try:
+        option_menu.tk_popup(event.x_root, event.y_root)
+    finally:
+        option_menu.grab_release()
+
+
 def OnDoubleClick(event):
-    reset_table_fields()
-    item = my_table.selection()[0]
-    record_values = my_table.item(item, "value")
-    print(f"You Clicked on {record_values[1].strip()}.")
-    unit_RadioVariable.set('Assorted Item')
-    unit_RadioVariable.set(str(record_values[1].strip()))
-    make_RadioVariable.set(str(record_values[2].strip()))
-    serial_number_entry.insert(0, record_values[3])
-    quantity_entry.insert(0, record_values[4])
-    pallet_number_entry.insert(0, record_values[5])
+    pass
 
 
 def getUnitOther():
@@ -298,105 +309,192 @@ def reset_table_fields():
     serial_number_entry.delete(0, 'end'),
     quantity_entry.delete(0, 'end'),
     pallet_number_entry.delete(0, 'end')
-    my_table.focus()
+    child_id = my_table.get_children()
+    # print(list(child_id)[0])
+    # my_table.focus(child_id)
     serial_number_entry.focus()
 
 
 def add_ewaste_records():
-    eWaste_Db_Connect.connectDB(dbTable)
-    cur = eWaste_Db_Connect.myCursor.execute(
+    eWaste_Db_Connect.connectDB(dbName, dbTable)
+    eWaste_Db_Connect.myCursor.execute(
         'INSERT INTO ewaste (unit, make, model_serial, item_qty, pallet) VALUES(" % s"," % s"," % s"," % s"," % s");'
-        % (unit_RadioVariable.get(), make_RadioVariable.get(), serial_number_entry.get(), quantity_entry.get(), pallet_number_entry.get()))
-
-    rowID = cur.lastrowid
-
-    sql = f"SELECT * FROM ewaste where id = {rowID}"
-    fetchResult = eWaste_Db_Connect.myCursor.execute(sql).fetchall()
-
-    if (rowID-1) % 2 == 0:
-        my_table.insert('', 0, values=fetchResult[0], tags='even')
-    else:
-        my_table.insert('', 0, values=fetchResult[0], tags='odd')
+        % (unit_RadioVariable.get(), make_RadioVariable.get(), serial_number_entry.get(), quantity_entry.get(), pallet_number_entry.get().strip()))
 
     with open(r"C:\Users\Mouhari Mouhamed\Downloads\E-Waste\config.txt", 'w') as r:
         r.write(pallet_number_entry.get())
 
-    reset_table_fields()
-    get_default_pallet()
     eWaste_Db_Connect.commitCloseDb()
+    queryData()
+    focus_cursor_toTop()
+    # get_default_pallet()
+
+    pass
+
+
+def refresh():
+    reset_table_fields()
+    for record in my_table.get_children():
+        my_table.delete(record)
 
 
 def delete_ewaste_record():
     messageDelete = messagebox.askyesno(
         "Delete", "Do you want to permanently delete this record?")
     if messageDelete > 0:
-        eWaste_Db_Connect.connectDB(dbTable)
+        eWaste_Db_Connect.connectDB(dbName, dbTable)
         cur = eWaste_Db_Connect.myCursor
         for selected_data in my_table.selection():
             selected_data_ID = my_table.set(selected_data, 'id')
-            my_table.delete(selected_data)
             deleted_recored = cur.execute(
-                f"Delete From ewaste where id={selected_data_ID}")
-    print("item has been Deleted")
+                f"Delete From ewaste where id={selected_data_ID};")
+
+            print(f"{deleted_recored} has been Deleted")
+
     eWaste_Db_Connect.commitCloseDb()
+    # pass
+    queryData()
+    focus_cursor_toTop()
+
+
+def focus_cursor_toTop():
+    child_id = my_table.get_children()[0]
+    print(child_id)
+    my_table.focus(child_id)
+    my_table.selection_set(child_id)
+    my_table.see(child_id)
 
 
 def update_ewaste_record():
-    selected = my_table.selection()[0]
-    record_value = my_table.item(selected, "value")
-    print(record_value)
+    updateWindow = Toplevel(mainWindow)
+    updateWindow.title('Update Ewaste Record')
+    updateWindow.geometry("700x700+200+50")
 
-    messageUpdate = messagebox.askyesno(
-        "Update", "Are you sure you want to update this record?")
+    updateLabel = Label(
+        updateWindow, text='Update Ewaste Record', font='arial 20')
+    updateLabel.pack(padx=40, side='top')
 
-    if messageUpdate > 0:
+    unit_options = [
+        'Assorted Item',
+        'Monitor',
+        'Desktop',
+        'Printer',
+        'Other'
+    ]
 
-        eWaste_Db_Connect.connectDB(dbTable)
-        update_query = """ Update ewaste SET unit=?, make=?, model_serial=?, item_qty=?, pallet=? WHERE id = ? """
-        columValues = (unit_RadioVariable.get(), make_RadioVariable.get(
-        ), serial_number_entry.get(), quantity_entry.get(), pallet_number_entry.get(), record_value[0])
-        print(columValues)
-        my_table.item(selected, text="", values=(record_value[0], unit_RadioVariable.get(), make_RadioVariable.get(
-        ), serial_number_entry.get(), quantity_entry.get(), pallet_number_entry.get()))
+    make_options = [
+        'Dell',
+        'HP',
+        'IBM',
+        'Lenovo',
+        'ThinkPad/ThinkCentre',
+        'Other'
+    ]
 
-        eWaste_Db_Connect.myCursor.execute(update_query, columValues)
-        with open(r"C:\Users\Mouhari Mouhamed\Downloads\E-Waste\config.txt", 'w') as r:
-            r.write(pallet_number_entry.get())
-    reset_table_fields()
-    get_default_pallet()
-    eWaste_Db_Connect.commitCloseDb()
+    unit_clicked = StringVar()
+    unit_clicked.set('Assorted Item')
+    unit_drop = OptionMenu(updateWindow, unit_clicked, *unit_options)
+    unit_drop.pack()
+
+    make_clicked = StringVar()
+    make_clicked.set('Dell')
+    make_drop = OptionMenu(updateWindow, make_clicked, *make_options)
+    make_drop.pack()
+
+    updateWindow.mainloop()
+    # selected = my_table.selection()
+    # record_value = my_table.item(selected, "value")
+    # print(record_value)
+
+    # messageUpdate = messagebox.askyesno(
+    #     "Update", "Are you sure you want to update this record?")
+
+    # if messageUpdate > 0:
+
+    #     eWaste_Db_Connect.connectDB(dbName, dbTable)
+    #     update_query = """ Update ewaste SET unit=?, make=?, model_serial=?, item_qty=?, pallet=? WHERE id = ? """
+    #     columValues = (unit_RadioVariable.get(), make_RadioVariable.get(
+    #     ), serial_number_entry.get(), quantity_entry.get(), pallet_number_entry.get(), record_value[0])
+    #     print(columValues)
+    #     my_table.item(selected, text="", values=(record_value[0], unit_RadioVariable.get(), make_RadioVariable.get(
+    #     ), serial_number_entry.get(), quantity_entry.get(), pallet_number_entry.get()))
+
+    #     eWaste_Db_Connect.myCursor.execute(update_query, columValues)
+    #     with open(r"C:\Users\Mouhari Mouhamed\Downloads\E-Waste\config.txt", 'w') as r:
+    #         r.write(pallet_number_entry.get())
+    # reset_table_fields()
+    # get_default_pallet()
+    # eWaste_Db_Connect.commitCloseDb()
+    pass
 
 
 def edit_pallet():
-    pallet_number_entry.config(state='normal')
+    # pallet_number_entry.config(state='normal')
+    global editPalletEntry, editPallet_errorMsg, editPallettWindow
+    editPallettWindow = Toplevel(mainWindow)
+    editPallettWindow.title('Edit Pallet #')
+    editPallettWindow.geometry("600x200+600+250")
+
+    editPallet_errorMsg = Label(
+        editPallettWindow, text='', font='arial 15', fg='red')
+    editPallet_errorMsg.pack()
+
+    editPalletLabel = Label(
+        editPallettWindow, text='Pallet #', font='arial 20')
+
+    editPalletLabel.pack(padx=40, side=LEFT)
+    editPalletEntry = Entry(editPallettWindow, font='arial 12')
+    editPalletEntry.pack(side=LEFT)
+    editPalletEntry.focus()
+    okButton = Button(editPallettWindow, text='Save',
+                      font='arial 15', command=exit_pallet)
+    okButton.pack(padx=40, side=LEFT)
+    editPallettWindow.bind('<Return>', lambda e: exit_pallet())
+
+
+def exit_pallet():
+    if editPalletEntry.get() == '':
+        editPallet_errorMsg.config(text='**NOTHING WAS ENTERED**')
+        print('NOTHING WAS ENTERED')
+    else:
+        with open(r"C:\Users\Mouhari Mouhamed\Downloads\E-Waste\config.txt", 'w') as r:
+            r.write(editPalletEntry.get())
+
+        print("Call Query DATA", editPalletEntry.get())
+        editPallettWindow.destroy()
+
+        print("Second Query call")
+        queryData()
+        # get_default_pallet()
 
 
 def queryData():
     global currentPallet
 
-    eWaste_Db_Connect.connectDB(dbTable)
+    eWaste_Db_Connect.connectDB(dbName, dbTable)
 
     myData_From_DB = eWaste_Db_Connect.myCursor.execute(
         'SELECT * FROM ewaste;').fetchall()
-
+    refresh()
     for record in myData_From_DB:
         if myData_From_DB.index(record) % 2 == 0:
             my_table.insert('', index=0, values=record, tags='even')
         else:
             my_table.insert('', index=0, values=record, tags='odd')
 
-    # Read config.txt file and grab the current Pallet value
-    with open(r"C:\Users\Mouhari Mouhamed\Downloads\E-Waste\config.txt", 'r') as r:
-        currentPallet = "     "+r.readline()
+    print("get default")
+    get_default_pallet()
+    focus_cursor_toTop()
 
-    pallet_number_entry.insert(0, currentPallet)
-    pallet_number_entry.config(state=DISABLED)
+    eWaste_Db_Connect.commitCloseDb()
 
 
 def get_default_pallet():
     with open(r"C:\Users\Mouhari Mouhamed\Downloads\E-Waste\config.txt", 'r') as r:
-        currentPallet = "     "+r.readline()
-
+        currentPallet = " "+r.readline().strip()
+    print("Curent pallet", currentPallet)
+    pallet_number_entry.config(state=NORMAL)
+    pallet_number_entry.delete(0, 'end')
     pallet_number_entry.insert(0, currentPallet)
     pallet_number_entry.config(state=DISABLED)
 
