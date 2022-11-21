@@ -18,6 +18,10 @@ class EWaste(Default_Home):
         global dbTable, dbName
         dbTable = 'ewaste'
         dbName = 'Inventory.db'
+        self.export_to_xls = Button(self.windows, text='Export File', bg='#f6f6f9', font=("", 16, "bold"), bd=0, fg='#7a7a7a',
+                                    cursor='hand2', activebackground='#fd6a36', activeforeground='#7a7a7a', command=lambda: csv_file())
+        self.export_to_xls.place(x=330, y=30)
+
         coverFrame = Frame(self.windows, bg='#ffffff')
         coverFrame.place(x=400, y=100, width=1055, height=630)
         topFrame = LabelFrame(coverFrame, bg='#f1f1f1', bd='2.4')

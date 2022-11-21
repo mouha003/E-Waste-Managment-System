@@ -52,9 +52,9 @@ class Default_Home:
                                     cursor='hand2', activebackground='#fd6a36', activeforeground='#7a7a7a')
         self.ewaste_button.place(x=210, y=30)
 
-        self.dashboard_button = Button(self.homepage, text='Dashboard', bg='#f6f6f9', font=("", 16, "bold"), bd=0, fg='#7a7a7a',
-                                       cursor='hand2', activebackground='#fd6a36', activeforeground='#7a7a7a')
-        self.dashboard_button.place(x=330, y=30)
+        # self.dashboard_button = Button(self.homepage, text='Dashboard', bg='#f6f6f9', font=("", 16, "bold"), bd=0, fg='#7a7a7a',
+        #                                cursor='hand2', activebackground='#fd6a36', activeforeground='#7a7a7a')
+        # self.dashboard_button.place(x=330, y=30)
 
     def closeWin(self):
         sure = messagebox.askyesno("Exit", "Are you sure you want to exit?")
