@@ -536,11 +536,9 @@ class EWaste(Default_Home):
         my_table.bind("<Button-3>", do_popup)
 
     def home(self):
-        global win
-        win = Toplevel()
-        Home_Page.HomePage(win)
+        Home_Page.HomePage(self.windows)
         self.dashboard_window.withdraw()
-        win.deiconify()
+        self.windows.deiconify()
 
     def closeWin(self):
         super().closeWin()

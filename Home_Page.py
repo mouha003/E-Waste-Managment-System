@@ -40,19 +40,19 @@ class HomePage(Default_Home):
         super().closeWin()
 
     def home(self):
-        win = Toplevel()
-        HomePage(win)
+        # win = Toplevel()
+        HomePage(self.windows)
         self.dashboard_window.withdraw()
-        win.deiconify()
+        self.windows.deiconify()
 
     def ewaste(self):
-        win = Toplevel()
-        Ewaste.EWaste(win)
+        # win = Toplevel()
+        Ewaste.EWaste(self.windows)
         self.dashboard_window.withdraw()
         self.ewaste_button.configure(bg='#fd6a36', fg='white')
         self.dashboard_window.title("E-Waste Mangement System")
         self.homepage.configure(background='#f6f6f9')
-        win.deiconify()
+        self.windows.deiconify()
 
 
 def page():
