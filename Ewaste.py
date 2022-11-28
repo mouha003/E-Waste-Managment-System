@@ -9,26 +9,41 @@ import sqlite3
 import eWaste_Db_Connect
 import csv
 import pandas as pd
-
-
+from time import strftime
+# pip install openpyxl
+#Date Inserted
 class EWaste(Default_Home):
     def __init__(self, windows):
         self.windows = windows
         super().__init__(self.windows)
         global dbTable, dbName
         dbTable = 'ewaste'
-        dbName = 'Inventory.db'
+        dbName = 'Database\Inventory.db'
         self.export_to_xls = Button(self.windows, text='Export File', bg='#f6f6f9', font=("", 16, "bold"), bd=0, fg='#7a7a7a',
                                     cursor='hand2', activebackground='#fd6a36', activeforeground='#7a7a7a', command=lambda: csv_file())
         self.export_to_xls.place(x=330, y=30)
+        def my_time():
+
+            time_string = strftime("%H:%M:%S %p \n %A \n %x")
+            timeDisplay.config(text=time_string, font=('times', 15, 'bold'),borderwidth=1, relief="solid")
+            timeDisplay.after(1000,my_time)
+
+        timeDisplay = Label(self.windows,bg='#f1f1f1',fg='#7a7a7a')
+        timeDisplay.place(relx=0.630, rely=0.012)
+        my_time()
+
+        time_string = strftime("%A\n%x")
+        time_str = StringVar()
+        time_str.set(time_string)
+
 
         coverFrame = Frame(self.windows, bg='#ffffff')
-        coverFrame.place(x=400, y=100, width=1055, height=630)
+        coverFrame.place(x=400, y=100, width=1100, height=630)
         topFrame = LabelFrame(coverFrame, bg='#f1f1f1', bd='2.4')
-        topFrame.place(x=70, y=20, width=897, height=40)
+        topFrame.place(x=15, y=20, width=1070, height=40)
         title = Label(topFrame, text='E-WASTE MANAGEMENT SYSTEM', font=("yu gothic ui", 13, "bold"),
                       fg='#ff6c38')
-        title.place(x=300, y=3)
+        title.place(relx=0.360, rely=.045)
 
         coverFrame2 = Frame(self.windows, bg='#ffffff')
         coverFrame2.place(x=0, y=100, width=390, height=630)
@@ -154,9 +169,10 @@ class EWaste(Default_Home):
                 ), title="Save CSV", filetypes=(("CSV File", "*xlsx"), ("All Files")), defaultextension=".xlsx")
 
                 df.to_excel(file)
+                messagebox.showinfo("Message", "Export Completed")
             except:
                 print("Unexpected Errow Has Occured!!!")
-            messagebox.showinfo("Message", "Export Completed")
+
 
         def otherOptionEntry(title, value, newVal):
             global otherMakeWindow, otherMakeEntry, otherMake_errorMsg
@@ -311,10 +327,10 @@ class EWaste(Default_Home):
             try:
                 eWaste_Db_Connect.connectDB(dbName, dbTable)
                 eWaste_Db_Connect.myCursor.execute(
-                    'INSERT INTO ewaste (unit, make, model_serial, item_qty, pallet) VALUES(" % s"," % s"," % s"," % s"," % s");'
-                    % (unit_RadioVariable.get(), make_RadioVariable.get(), serial_number_entry.get(), quantity_entry.get(), pallet_number_entry.get().strip()))
+                    'INSERT INTO ewaste (unit, make, model_serial, item_qty, pallet, time_stamp) VALUES(" % s"," % s"," % s"," % s"," % s"," % s");'
+                    % (unit_RadioVariable.get(), make_RadioVariable.get(), serial_number_entry.get(), quantity_entry.get(), pallet_number_entry.get().strip(), time_str.get()))
 
-                with open(r"config.txt", 'w') as r:
+                with open(r"ConfigFile\config.txt", 'w') as r:
                     r.write(pallet_number_entry.get())
 
                 eWaste_Db_Connect.commitCloseDb()
@@ -409,7 +425,7 @@ class EWaste(Default_Home):
                 editPallet_errorMsg.config(text='**NOTHING WAS ENTERED**')
                 # print('NOTHING WAS ENTERED')
             else:
-                with open(r"config.txt", 'w') as r:
+                with open(r"ConfigFile\config.txt", 'w') as r:
                     r.write(editPalletEntry.get())
 
                 # print("Call Query DATA", editPalletEntry.get())
@@ -434,7 +450,7 @@ class EWaste(Default_Home):
 
         style = ttk.Style()
         style.theme_use("clam")
-        style.configure('Treeview', bg='#3BA4B9', rowheight=30,
+        style.configure('Treeview', bg='#3BA4B9', rowheight=50,
                         fg='black', fieldbackground='gray',  font=("yu gothic ui", 11))
         style.map("Treeview", background=[('selected', '#6F5EA2')])
         scrollbarx = Scrollbar(self.windows, orient=HORIZONTAL)
@@ -443,8 +459,8 @@ class EWaste(Default_Home):
         my_table = ttk.Treeview(coverFrame)
         my_table.tag_configure('even', background='white')
         my_table.tag_configure('odd', background='#fdf2f2')
-        my_table.place(relx=0.0640, rely=0.108,
-                       width=900, height=510)
+        my_table.place(relx=0.0140, rely=0.108,
+                       width=1070, height=510)
         my_table.configure(
             yscrollcommand=scrollbary.set, xscrollcommand=scrollbarx.set
         )
@@ -466,7 +482,8 @@ class EWaste(Default_Home):
                 "make",
                 "model_serial",
                 "item_qty",
-                "pallet"
+                "pallet",
+                "time_stamp"
             )
         )
 
@@ -479,20 +496,23 @@ class EWaste(Default_Home):
         my_table.heading(
             "item_qty", text="Item - Quantity", anchor=N)
         my_table.heading("pallet", text="Pallet #", anchor=N)
+        my_table.heading("time_stamp", text="Date Created", anchor=N)
 
         my_table.column("#0", stretch=NO, minwidth=0, width=0)
         my_table.column(
             "id", stretch=NO, minwidth=0, width=50, anchor=N)
         my_table.column(
-            "unit", stretch=NO, minwidth=0, width=288, anchor=N)
+            "unit", stretch=NO, minwidth=0, width=250, anchor=N)
         my_table.column(
             "make", stretch=NO, minwidth=0, width=176, anchor=N)
         my_table.column(
-            "model_serial", stretch=NO, minwidth=0, width=110, anchor=N)
+            "model_serial", stretch=NO, minwidth=0, width=114, anchor=N)
         my_table.column(
             "item_qty", stretch=NO, minwidth=0, width=110, anchor=N)
         my_table.column(
             "pallet", stretch=NO, minwidth=0, width=160, anchor=N)
+        my_table.column(
+        "time_stamp", stretch=NO, minwidth=0,width=207, anchor=N)
 
         def ewaste_info(ev):
             viewInfo = my_table.focus()
@@ -510,7 +530,7 @@ class EWaste(Default_Home):
         my_table.bind("<ButtonRelease-1>", ewaste_info)
 
         def get_default_pallet():
-            with open(r"config.txt", 'r') as r:
+            with open(r"ConfigFile\config.txt", 'r') as r:
                 currentPallet = " "+r.readline().strip()
             # print("Curent pallet", currentPallet)
             pallet_number_entry.config(state=NORMAL)
